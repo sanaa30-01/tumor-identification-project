@@ -1,0 +1,43 @@
+# Data 
+data/
+*.zip
+*.jpg
+*.jpeg
+*.png
+*.tif
+*.tiff
+!figures/*.png
+
+# Credentials
+kaggle.json
+.env
+*.pem
+
+# Model artifacts
+checkpoints/
+*.pt
+*.pth
+*.h5
+*.onnx
+runs/
+wandb/
+lightning_logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.cursor/
