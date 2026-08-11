@@ -20,6 +20,8 @@ glioma vs meningioma, which is the only pair with no available shortcut.
 
 ---
 
+
+
 ## 1. Dataset composition
 
 - **7,200 images total**, pre-split into `Training/` and `Testing/`
@@ -37,15 +39,19 @@ relevant to Section 3 below.
 
 ---
 
+
+
 ## 2. Image properties
 
-| Property | Observed | Implication |
-|---|---|---|
-| Width | 150–1338 px, median 512 | Resize required before batching |
-| Height | 168–1304 px, median 512 | Same |
-| Square | 79.6% of sampled images | ~1 in 5 needs padding, not stretching |
-| PIL modes | RGB, L, and one RGBA | Must normalize to one mode or batching fails |
-| Dtype / range | uint8, 0–255 | Divide by 255 during normalization |
+
+| Property      | Observed                | Implication                                  |
+| ------------- | ----------------------- | -------------------------------------------- |
+| Width         | 150–1338 px, median 512 | Resize required before batching              |
+| Height        | 168–1304 px, median 512 | Same                                         |
+| Square        | 79.6% of sampled images | ~1 in 5 needs padding, not stretching        |
+| PIL modes     | RGB, L, and one RGBA    | Must normalize to one mode or batching fails |
+| Dtype / range | uint8, 0–255            | Divide by 255 during normalization           |
+
 
 **Aspect ratio decision:** pad to square before resizing rather than stretching.
 Stretching distorts anatomy for 20% of the data and risks the model learning
@@ -57,6 +63,8 @@ The remaining ones are covered in Section 3.
 
 ---
 
+
+
 ## 3. Source leakage
 
 This is the most important finding in the EDA.
@@ -64,7 +72,7 @@ This is the most important finding in the EDA.
 ### 3.1 Colored images cluster entirely in one class
 
 128 of 7,200 images have genuinely colored (non-identical) channels. **All 128
-are in `notumor`** — 90 train, 38 test. Zero in any tumor class. Several show
+are in** `notumor` — 90 train, 38 test. Zero in any tumor class. Several show
 watermark bars and web-source text along the image edge.
 
 A perfect correlation between an artifact and a label is a shortcut feature: a
@@ -100,12 +108,14 @@ encoded in empty space.
 
 Recall from border pixels alone:
 
-| Class | Recall | Reading |
-|---|---|---|
-| notumor | 0.77 | Strongly leaked |
-| pituitary | 0.75 | Strongly leaked |
-| glioma | 0.68 | Leaked |
-| meningioma | 0.33 | Barely above chance |
+
+| Class      | Recall | Reading             |
+| ---------- | ------ | ------------------- |
+| notumor    | 0.77   | Strongly leaked     |
+| pituitary  | 0.75   | Strongly leaked     |
+| glioma     | 0.68   | Leaked              |
+| meningioma | 0.33   | Barely above chance |
+
 
 56 of 123 meningioma cases were predicted as glioma — more than were correctly
 classified. **Glioma and meningioma are not separable from background**, meaning
@@ -115,18 +125,20 @@ they share a source and acquisition protocol.
 
 The sample grid confirms and extends the statistical findings:
 
-- **`notumor` is a different pulse sequence.** The three tumor classes appear
-  T1-weighted post-contrast: darker overall, bright enhancing lesions, full head
-  including neck, face, and sinuses. `notumor` is bright and high-contrast with
-  inverted tissue relationships (T2 or FLAIR), and the brain fills the frame
-  with minimal neck or facial anatomy.
+- `notumor` **is a different pulse sequence.** The three tumor classes appear
+T1-weighted post-contrast: darker overall, bright enhancing lesions, full head
+including neck, face, and sinuses. `notumor` is bright and high-contrast with
+inverted tissue relationships (T2 or FLAIR), and the brain fills the frame
+with minimal neck or facial anatomy.
 - **The watermarked images look no different from the rest of their row.** The
-  colored channels were a marker of the source split, not the confound itself.
+colored channels were a marker of the source split, not the confound itself.
 - **Glioma and meningioma are visually interchangeable** — same sequence, same
-  framing, same anatomy on display.
+framing, same anatomy on display.
 - **Pituitary shares the tumor-class acquisition** but is framed lower, with
-  orbits and skull base visible in nearly every image. This is the field-of-view
-  difference the border test detected.
+orbits and skull base visible in nearly every image. This is the field-of-view
+difference the border test detected.
+
+
 
 ### 3.6 What can and cannot be fixed
 
@@ -134,7 +146,7 @@ The sample grid confirms and extends the statistical findings:
 pixels carrying the background signature — watermark bars, padding, differing
 black levels.
 
-**Cropping will not fix the `notumor` confound.** A different pulse sequence
+**Cropping will not fix the** `notumor` **confound.** A different pulse sequence
 changes tissue contrast *inside* the brain. Per-image intensity normalization
 won't fully fix it either, since sequence differences alter *relative* contrast
 between tissues rather than overall brightness.
@@ -144,18 +156,22 @@ bound it, and report it.
 
 ---
 
+
+
 ## 4. Decisions carried into preprocessing
 
 1. Pad to square, then resize — do not stretch
 2. Convert all images to a single channel mode before batching
 3. Divide by 255; compute normalization statistics from the training split only
 4. Treat margin removal as leakage mitigation, and **re-run the 8×8 and
-   border-only tests on cropped images** to verify it worked
+  border-only tests on cropped images** to verify it worked
 5. The crop finds the largest contour, which in sagittal views is the entire
-   head including face and neck — not the brain. This is margin removal, not
+  head including face and neck — not the brain. This is margin removal, not
    skull-stripping. Skull-stripping is out of scope.
 
 ---
+
+
 
 ## 5. Evaluation plan
 
@@ -164,11 +180,13 @@ no-anatomy control, not against random guessing.
 
 Run three evaluations:
 
-| Task | Purpose |
-|---|---|
-| 4-class | Headline number, comparable to published results on this dataset |
-| 3-class (tumor types only) | Removes the `notumor` sequence confound |
-| Glioma vs meningioma | The only pair with no shortcut — the real test |
+
+| Task                       | Purpose                                                          |
+| -------------------------- | ---------------------------------------------------------------- |
+| 4-class                    | Headline number, comparable to published results on this dataset |
+| 3-class (tumor types only) | Removes the `notumor` sequence confound                          |
+| Glioma vs meningioma       | The only pair with no shortcut — the real test                   |
+
 
 **Diagnostic to watch:** glioma/meningioma recall in the final confusion matrix.
 High overall accuracy with persistent confusion between those two indicates the
@@ -176,30 +194,39 @@ model is riding artifacts on the easy three classes.
 
 Control table to complete:
 
-| Control | Accuracy |
-|---|---|
-| Majority class | 0.262 |
-| 8×8, no anatomy visible | 0.650 |
-| Border pixels only | 0.634 |
-| 8×8 after cropping | *to measure* |
+
+| Control                     | Accuracy     |
+| --------------------------- | ------------ |
+| Majority class              | 0.262        |
+| 8×8, no anatomy visible     | 0.650        |
+| Border pixels only          | 0.634        |
+| 8×8 after cropping          | *to measure* |
 | Border only, after cropping | *to measure* |
 
+
 ---
+
+
 
 ## 6. Limitations for the write-up
 
 - **Class labels are confounded with source dataset and pulse sequence.**
-  Background-only classification reaches 0.634 vs a 0.262 baseline. The
-  `notumor` class appears to be a different acquisition entirely.
+Background-only classification reaches 0.634 vs a 0.262 baseline. The
+`notumor` class appears to be a different acquisition entirely.
 - **No patient IDs.** Slices from the same patient may fall in both train and
-  validation, inflating validation scores. Cannot be fully resolved without
-  patient metadata.
+validation, inflating validation scores. Cannot be fully resolved without
+patient metadata.
 - **Single 2D slices, not volumes.** No 3D context available.
 - **Assembled from three sources** with heterogeneous acquisition parameters,
-  and a documented labeling correction in one of them.
+and a documented labeling correction in one of them.
 - **No segmentation masks**, so no localization and no Dice/IoU.
+- The dataset as a whole has a duplication percentage of 44.6%
+- The no tumor class has only n = 47 non-duplicate images, indicating that ~88% of  
+data in this class was duplicated (in test and train sets) and would have inflated model accuracy
 
 ---
+
+
 
 ## 7. Outstanding — do before splitting
 
@@ -212,6 +239,8 @@ patient-level leakage a random train/val split will introduce.
 notebook itself while the sample grid is still in view.
 
 ---
+
+
 
 ## Next
 
