@@ -1,0 +1,2 @@
+model,lr,weight_decay,batch,augment,epochs_run,best_epoch,best_val_f1,best_val_acc,shape_control,notes
+SmallCNN w32,0.001,0.0001,32,rot12+hflip+jitter,40,39,0.9656,0.9636,0.4842,
